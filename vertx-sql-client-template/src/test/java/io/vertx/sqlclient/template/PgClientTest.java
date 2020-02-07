@@ -17,20 +17,23 @@
 
 package io.vertx.sqlclient.template;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.pgclient.PgClientTestBase;
 import io.vertx.pgclient.PgConnection;
-import io.vertx.pgclient.PgConnectionTestBase;
 import io.vertx.pgclient.PgTestBase;
-import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.Row;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -62,8 +65,8 @@ public class PgClientTest extends PgTestBase {
   @Test
   public void testQuery(TestContext ctx) {
     connector.accept(ctx.asyncAssertSuccess(conn -> {
-      SqlTemplate template = SqlTemplate.create(conn, "SELECT id, randomnumber from WORLD WHERE id=:id");
-      template.query(Function.identity(), Collections.singletonMap("id", 1), ctx.asyncAssertSuccess(res -> {
+      QueryTemplate<Row> template = QueryTemplate.create(conn, "SELECT id, randomnumber from WORLD WHERE id=:id");
+      template.query( Collections.singletonMap("id", 1), ctx.asyncAssertSuccess(res -> {
         System.out.println("DONE");
       }));
     }));
@@ -74,11 +77,43 @@ public class PgClientTest extends PgTestBase {
     World w = new World();
     w.id = 1;
     connector.accept(ctx.asyncAssertSuccess(conn -> {
-      SqlTemplate template = SqlTemplate.create(conn, "SELECT id, randomnumber from WORLD WHERE id=:id");
-      template.query(World.class, w, ctx.asyncAssertSuccess(res -> {
+      QueryTemplate<World> template = QueryTemplate.create(conn, World.class, "SELECT id, randomnumber from WORLD WHERE id=:id");
+      template.query(w, ctx.asyncAssertSuccess(res -> {
         res.forEach(world -> {
           System.out.println(world.id + " " + world.randomnumber);
         });
+      }));
+    }));
+  }
+
+  @Test
+  public void testLocalDateTimeWithJackson(TestContext ctx) {
+    DatabindCodec.mapper().registerModule(new JavaTimeModule());
+    connector.accept(ctx.asyncAssertSuccess(conn -> {
+      LocalDateTime ldt = LocalDateTime.parse("2017-05-14T19:35:58.237666");
+      QueryTemplate<LocalDateTimePojo> template = QueryTemplate.create(conn, LocalDateTimePojo.class, "SELECT :value :: TIMESTAMP WITHOUT TIME ZONE \"localDateTime\"");
+      template.query(Collections.singletonMap("value", ldt), ctx.asyncAssertSuccess(result -> {
+        ctx.assertEquals(1, result.size());
+        ctx.assertEquals(ldt, result.get(0).localDateTime);
+      }));
+    }));
+  }
+
+  @Test
+  public void testLocalDateTimeWithCodegen(TestContext ctx) {
+    connector.accept(ctx.asyncAssertSuccess(conn -> {
+      LocalDateTime ldt = LocalDateTime.parse("2017-05-14T19:35:58.237666");
+      Function<Row, LocalDateTimeDataObject> mapper = row -> {
+        Map<String, Object> map = new HashMap<>();
+        for (int i = 0;i < row.size();i++) {
+          map.put(row.getColumnName(i), row.getValue(i));
+        }
+        return LocalDateTimeDataObjectConverter.fromMap(map.entrySet());
+      };
+      QueryTemplate<LocalDateTimeDataObject> template = QueryTemplate.create(conn, mapper, "SELECT :value :: TIMESTAMP WITHOUT TIME ZONE \"localDateTime\"");
+      template.query(Collections.singletonMap("value", ldt), ctx.asyncAssertSuccess(result -> {
+        ctx.assertEquals(1, result.size());
+        ctx.assertEquals(ldt, result.get(0).getLocalDateTime());
       }));
     }));
   }

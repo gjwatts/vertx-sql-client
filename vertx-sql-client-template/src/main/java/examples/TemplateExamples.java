@@ -2,7 +2,8 @@ package examples;
 
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.SqlClient;
-import io.vertx.sqlclient.template.SqlTemplate;
+import io.vertx.sqlclient.template.BatchTemplate;
+import io.vertx.sqlclient.template.QueryTemplate;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,8 +27,8 @@ public class TemplateExamples {
 
 
   public void fxExample(SqlClient client) {
-    SqlTemplate template = SqlTemplate.create(client, "SELECT * FROM users WHERE id=:id");
-    template.query(mapper, Collections.singletonMap("id", 1))
+    QueryTemplate<User> template = QueryTemplate.create(client, mapper, "SELECT * FROM users WHERE id=:id");
+    template.query(Collections.singletonMap("id", 1))
       .onSuccess(users -> {
         users.forEach(user -> {
           System.out.println(user.firstName + " " + user.lastName);
@@ -36,10 +37,10 @@ public class TemplateExamples {
   }
 
   public void bindingExample(SqlClient client) {
-    SqlTemplate template = SqlTemplate.create(client, "SELECT * FROM users WHERE id=:id");
+    QueryTemplate<User> template = QueryTemplate.create(client, User.class, "SELECT * FROM users WHERE id=:id");
     User u = new User();
     u.id = 1;
-    template.query(User.class, u)
+    template.query(u)
       .onSuccess(users -> {
         users.forEach(user -> {
           System.out.println(user.firstName + " " + user.lastName);
@@ -49,10 +50,10 @@ public class TemplateExamples {
 
   public void batchExample(SqlClient client, List<User> users) {
     String sql = "INSERT INTO users (id,first_name,last_name) VALUES (:id,:firstName,:lastName)";
-    SqlTemplate template = SqlTemplate.create(client, sql);
-    template.batch(User.class, users)
-      .onSuccess(v -> {
-        System.out.println("Done");
-      });
+//    BatchTemplate<User> template = BatchTemplate.create(client, sql);
+//    template.batch(User.class, users)
+//      .onSuccess(v -> {
+//        System.out.println("Done");
+//      });
   }
 }
