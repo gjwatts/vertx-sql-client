@@ -24,11 +24,17 @@ public interface BatchTemplate<T> {
   @GenIgnore
   static BatchTemplate<Map<String, Object>> create(SqlClient client, String template) {
     TupleMapper tupleMapper = new TupleMapper(client, template);
-    return new BatchTemplateImpl<>(client, new TupleMapper(client, template), tupleMapper::mapTuple, template);
+    return new BatchTemplateImpl<>(client, new TupleMapper(client, template), tupleMapper::mapTuple);
   }
 
   static <T> BatchTemplate<T> create(SqlClient client, Function<T, Tuple> mapper, String template) {
-    return new BatchTemplateImpl<>(client, new TupleMapper(client, template), mapper, template);
+    return new BatchTemplateImpl<>(client, new TupleMapper(client, template), mapper);
+  }
+
+  static <T> BatchTemplate<T> create(SqlClient client, Class<T> clazz, String template) {
+    TupleMapper tupleMapper = new TupleMapper(client, template);
+    Function<T, Tuple> mapper = t -> tupleMapper.mapTuple(JsonObject.mapFrom(t).getMap());
+    return new BatchTemplateImpl<>(client, new TupleMapper(client, template), mapper);
   }
 
   @GenIgnore

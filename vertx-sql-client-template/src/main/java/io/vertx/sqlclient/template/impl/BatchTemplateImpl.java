@@ -25,7 +25,7 @@ public class BatchTemplateImpl<T> implements BatchTemplate<T> {
   private final TupleMapper tupleMapper;
   private final Function<T, Tuple> mapper;
 
-  public BatchTemplateImpl(SqlClient client, TupleMapper mapper2, Function<T, Tuple> mapper, String template) {
+  public BatchTemplateImpl(SqlClient client, TupleMapper mapper2, Function<T, Tuple> mapper) {
     this.mapper = mapper;
     this.tupleMapper = mapper2;
     this.client = (SqlClientBase) client;

@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -114,6 +115,24 @@ public class PgClientTest extends PgTestBase {
       template.query(Collections.singletonMap("value", ldt), ctx.asyncAssertSuccess(result -> {
         ctx.assertEquals(1, result.size());
         ctx.assertEquals(ldt, result.get(0).getLocalDateTime());
+      }));
+    }));
+  }
+
+  @Test
+  public void testBatchUpdate(TestContext ctx) {
+    connector.accept(ctx.asyncAssertSuccess(conn -> {
+      BatchTemplate<World> template = BatchTemplate.create(conn, World.class, "INSERT INTO World (id, randomnumber) VALUES (:id, :randomnumber)");
+      template.batch(Arrays.asList(
+        new World(20_000, 0),
+        new World(20_001, 1),
+        new World(20_002, 2),
+        new World(20_003, 3)
+      ), ctx.asyncAssertSuccess(v -> {
+        conn.query("SELECT id, randomnumber from WORLD WHERE id=20000", ctx.asyncAssertSuccess(rowset -> {
+          ctx.assertEquals(1, rowset.size());
+          ctx.assertEquals(0, rowset.iterator().next().getInteger(1));
+        }));
       }));
     }));
   }
