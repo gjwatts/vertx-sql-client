@@ -4,7 +4,7 @@ import io.vertx.codegen.annotations.DataObject;
 
 import java.time.LocalDateTime;
 
-@DataObject(generateConverter = true)
+@DataObject
 public class LocalDateTimeDataObject {
 
   private LocalDateTime localDateTime;

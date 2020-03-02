@@ -109,7 +109,7 @@ public class PgClientTest extends PgTestBase {
         for (int i = 0;i < row.size();i++) {
           map.put(row.getColumnName(i), row.getValue(i));
         }
-        return LocalDateTimeDataObjectConverter.fromMap(map.entrySet());
+        return LocalDateTimeDataObjectMapper.fromMap(map);
       };
       QueryTemplate<LocalDateTimeDataObject> template = QueryTemplate.create(conn, mapper, "SELECT :value :: TIMESTAMP WITHOUT TIME ZONE \"localDateTime\"");
       template.query(Collections.singletonMap("value", ldt), ctx.asyncAssertSuccess(result -> {
